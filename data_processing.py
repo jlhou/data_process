@@ -1,44 +1,30 @@
-import torch
-import torchvision.transforms as transforms  #torchvision.transform是pytorch中数据处理的模块
-import torchvision.datasets as datasets      #torchvision.datasets是pytorch中存储数据的模块，对于常用数据集
-                                             #直接提供在线下载的功能，若自己手中数据集已有，则另doemload=Flase
+"""处理多级文件夹，可以考虑先返回文件或者文件夹列表的方式"""
+import os
+import shutil
+source_a = "/mnt/sdb/extract_ILSVRC2012/val"
+source_b = "/mnt/sdb/extract_ILSVRC2012/test"
+data_a = os.listdir(source_a)
+data_b = os.listdir(source_b)
+"""
+listdir可以用老返回某一文件夹下的子文件目录，返回的是一个无序的列表。如果要排序，将得到是我列表如a
+a.sort()就是一个有序的列表"""
+data_a.sort()
+data_b.sort()
+if not os.path.exists("/mnt/sdb/extract_ILSVRC2012/validation"):
+    os.mkdir("/mnt/sdb/extract_ILSVRC2012/validation")
+newpath = "/mnt/sdb/extract_ILSVRC2012/validation"
 
-def load_data(args):
-    if args.dataset_mode == "CIFAR10":
-            transform_train = transforms.Compose([                     #transform.Compose函数是将各种对数据的处理组合起来的一个函数而已
-                transforms.Resize(224),
-                transforms.RandomCrop(224, padding=4),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),                                  #在进行transform.Normalize的处理之前一定要有transform.Totensoer
-                                                                        #因为之前的数据处理操作都是对图像而言的，而这一次归一化的是Tensor,所以一定要有这一步的变化
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),  #每个通道方差和标准差的操作，具体的数值不同的数据不一样，用到时再上网查找
-            ])
+for i in range(len(data_a)):
+    for derName, subfolders, filenames in os.walk(source_a+"/"+data_a[i]):
+        for j in range(len(filenames)):
+            filepath_a = derName+"/"+filenames[j]
+            if not os.path.exists(newpath+"/"+data_a[i]):
+                os.mkdir(newpath+"/"+data_a[i])
+            newpath_validation = os.path.join(newpath, data_a[i], filenames[j])
+            shutil.copy(filepath_a, newpath_validation)
 
-            transform_test = transforms.Compose([
-                transforms.Resize(224),
-                transforms.ToTensor(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-            ])
-            #定义好数据的各种变换之后，就先该下载数据，下载好数据之后在做变换，之后再得到train_data了，
-            #注意注意一定要注意！！！如果按这个下载会相当慢，如果自己已经下好了数据，就在root这里写好数据地址就行，
-            #dowmload写为Flase就行，但是一定要记住，路径一定要写到数据集的上一级！！！！！！！一定要写到上一级！
-            train_data = datasets.CIFAR10(root='C:\\Users\\asus\Desktop\MobileNetV3-Pytorch-master', train=True, download=False, transform=transform_train)
-            test_data = datasets.CIFAR10(root='C:\\Users\\asus\Desktop\MobileNetV3-Pytorch-master', train=False, download=False, transform=transform_test)
-            #下载好数据后，就该把数据加载到网络了，这时候就需要加载器加载，也会有batchsize什么的
-            train_loader = torch.utils.data.DataLoader(
-                train_data,
-                batch_size=args.batch_size,
-                shuffle=True,
-                num_workers=args.workers
-            )
-
-            test_loader = torch.utils.data.DataLoader(
-                test_data,
-                batch_size=args.batch_size,
-                shuffle=False,
-                num_workers=args.workers
-            )
-
-
-###！！！！此数据处理的方法只针对torchsion中有的数据，如果torchvison中没有，还有imagefolder,还有自己的数据集什么的要出路
-###在遇到的时候再补充
+    for derName, subfolders, filenames in os.walk(source_b+"/"+data_b[i]):
+        for j in range(len(filenames)):
+            filepath_b = derName+"/"+filenames[j]
+            newpath_validation = newpath+"/"+data_a[i]+"/"+filenames[j]
+            shutil.copy(filepath_b, newpath_validation)
